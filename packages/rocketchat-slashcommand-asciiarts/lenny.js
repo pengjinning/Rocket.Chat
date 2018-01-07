@@ -6,15 +6,13 @@
 
 function LennyFace(command, params, item) {
 	if (command === 'lennyface') {
-		var msg;
-
-		msg = item;
-		msg.msg = params + ' ( ͡° ͜ʖ ͡°)';
+		const msg = item;
+		msg.msg = `${ params } ( ͡° ͜ʖ ͡°)`;
 		Meteor.call('sendMessage', msg);
 	}
 }
 
 RocketChat.slashCommands.add('lennyface', LennyFace, {
 	description: 'Slash_LennyFace_Description',
-	params: 'your message (optional)'
+	params: 'your_message_optional'
 });

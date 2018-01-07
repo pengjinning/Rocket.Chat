@@ -6,13 +6,11 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
-	api.versionsFrom('1.0');
-
 	api.use([
-		'coffeescript',
+		'ecmascript',
 		'rocketchat:lib'
 	]);
 
-	api.addFiles('server.coffee', 'server');
-	api.addFiles('client.coffee', 'client');
+	api.addFiles('server/server.js', 'server');
+	api.addFiles('client/client.js', 'client');
 });

@@ -6,15 +6,13 @@
 
 function Tableflip(command, params, item) {
 	if (command === 'tableflip') {
-		var msg;
-
-		msg = item;
-		msg.msg = params + ' ¯(╯°□°）╯︵ ┻━┻';
+		const msg = item;
+		msg.msg = `${ params } (╯°□°）╯︵ ┻━┻`;
 		Meteor.call('sendMessage', msg);
 	}
 }
 
 RocketChat.slashCommands.add('tableflip', Tableflip, {
 	description: 'Slash_Tableflip_Description',
-	params: 'your message (optional)'
+	params: 'your_message_optional'
 });

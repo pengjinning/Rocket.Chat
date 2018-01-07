@@ -6,12 +6,9 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
-	api.versionsFrom('1.0');
-
 
 	api.use([
 		'ecmascript',
-		'less@2.5.0',
 		'rocketchat:lib',
 		'tracker',
 		'reactive-var'
@@ -22,7 +19,7 @@ Package.onUse(function(api) {
 	api.addFiles([
 		'client/rocketchat.otr.js',
 		'client/rocketchat.otr.room.js',
-		'client/stylesheets/otr.less',
+		'client/stylesheets/otr.css',
 		'client/views/otrFlexTab.html',
 		'client/views/otrFlexTab.js',
 		'client/tabBar.js'

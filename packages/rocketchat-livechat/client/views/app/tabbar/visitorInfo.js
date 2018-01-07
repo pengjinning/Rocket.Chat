@@ -1,18 +1,25 @@
+/* globals LivechatVisitor */
+
+import _ from 'underscore';
+import s from 'underscore.string';
+import moment from 'moment';
+import UAParser from 'ua-parser-js';
+
 Template.visitorInfo.helpers({
 	user() {
 		const user = Template.instance().user.get();
 		if (user && user.userAgent) {
-			var ua = new UAParser();
+			const ua = new UAParser();
 			ua.setUA(user.userAgent);
 
-			user.os = ua.getOS().name + ' ' + ua.getOS().version;
+			user.os = `${ ua.getOS().name } ${ ua.getOS().version }`;
 			if (['Mac OS', 'iOS'].indexOf(ua.getOS().name) !== -1) {
 				user.osIcon = 'icon-apple';
 			} else {
-				user.osIcon = 'icon-' + ua.getOS().name.toLowerCase();
+				user.osIcon = `icon-${ ua.getOS().name.toLowerCase() }`;
 			}
-			user.browser = ua.getBrowser().name + ' ' + ua.getBrowser().version;
-			user.browserIcon = 'icon-' + ua.getBrowser().name.toLowerCase();
+			user.browser = `${ ua.getBrowser().name } ${ ua.getBrowser().version }`;
+			user.browserIcon = `icon-${ ua.getBrowser().name.toLowerCase() }`;
 		}
 
 		return user;
@@ -23,31 +30,31 @@ Template.visitorInfo.helpers({
 	},
 
 	joinTags() {
-		return this.tags.join(', ');
+		return this.tags && this.tags.join(', ');
 	},
 
 	customFields() {
-		let fields = [];
+		const fields = [];
 		let livechatData = {};
 		const user = Template.instance().user.get();
 		if (user) {
 			livechatData = _.extend(livechatData, user.livechatData);
 		}
 
-		let data = Template.currentData();
+		const data = Template.currentData();
 		if (data && data.rid) {
-			let room = RocketChat.models.Rooms.findOne(data.rid);
+			const room = RocketChat.models.Rooms.findOne(data.rid);
 			if (room) {
 				livechatData = _.extend(livechatData, room.livechatData);
 			}
 		}
 
 		if (!_.isEmpty(livechatData)) {
-			for (let _id in livechatData) {
+			for (const _id in livechatData) {
 				if (livechatData.hasOwnProperty(_id)) {
-					let customFields = Template.instance().customFields.get();
+					const customFields = Template.instance().customFields.get();
 					if (customFields) {
-						let field = _.findWhere(customFields, { _id: _id });
+						const field = _.findWhere(customFields, { _id });
 						if (field && field.visibility !== 'hidden') {
 							fields.push({ label: field.label, value: livechatData[_id] });
 						}
@@ -73,7 +80,11 @@ Template.visitorInfo.helpers({
 	},
 
 	editing() {
-		return Template.instance().editing.get();
+		return Template.instance().action.get() === 'edit';
+	},
+
+	forwarding() {
+		return Template.instance().action.get() === 'forward';
 	},
 
 	editDetails() {
@@ -83,10 +94,25 @@ Template.visitorInfo.helpers({
 			visitorId: user ? user._id : null,
 			roomId: this.rid,
 			save() {
-				instance.editing.set(false);
+				instance.action.set();
 			},
 			cancel() {
-				instance.editing.set(false);
+				instance.action.set();
+			}
+		};
+	},
+
+	forwardDetails() {
+		const instance = Template.instance();
+		const user = instance.user.get();
+		return {
+			visitorId: user ? user._id : null,
+			roomId: this.rid,
+			save() {
+				instance.action.set();
+			},
+			cancel() {
+				instance.action.set();
 			}
 		};
 	},
@@ -95,6 +121,29 @@ Template.visitorInfo.helpers({
 		const room = ChatRoom.findOne({ _id: this.rid });
 
 		return room.open;
+	},
+
+	guestPool() {
+		return RocketChat.settings.get('Livechat_Routing_Method') === 'Guest_Pool';
+	},
+
+	showDetail() {
+		if (Template.instance().action.get()) {
+			return 'hidden';
+		}
+	},
+
+	canSeeButtons() {
+		if (RocketChat.authz.hasRole(Meteor.userId(), 'livechat-manager')) {
+			return true;
+		}
+
+		const data = Template.currentData();
+		if (data && data.rid) {
+			const subscription = RocketChat.models.Subscriptions.findOne({ rid: data.rid });
+			return subscription !== undefined;
+		}
+		return false;
 	}
 });
 
@@ -102,12 +151,12 @@ Template.visitorInfo.events({
 	'click .edit-livechat'(event, instance) {
 		event.preventDefault();
 
-		instance.editing.set(true);
+		instance.action.set('edit');
 	},
 	'click .close-livechat'(event) {
 		event.preventDefault();
 
-		swal({
+		modal.open({
 			title: t('Closing_chat'),
 			type: 'input',
 			inputPlaceholder: t('Please_add_a_comment'),
@@ -115,12 +164,12 @@ Template.visitorInfo.events({
 			closeOnConfirm: false
 		}, (inputValue) => {
 			if (!inputValue) {
-				swal.showInputError(t('Please_add_a_comment_to_close_the_room'));
+				modal.showInputError(t('Please_add_a_comment_to_close_the_room'));
 				return false;
 			}
 
 			if (s.trim(inputValue) === '') {
-				swal.showInputError(t('Please_add_a_comment_to_close_the_room'));
+				modal.showInputError(t('Please_add_a_comment_to_close_the_room'));
 				return false;
 			}
 
@@ -128,7 +177,7 @@ Template.visitorInfo.events({
 				if (error) {
 					return handleError(error);
 				}
-				swal({
+				modal.open({
 					title: t('Chat_closed'),
 					text: t('Chat_closed_successfully'),
 					type: 'success',
@@ -137,13 +186,41 @@ Template.visitorInfo.events({
 				});
 			});
 		});
+	},
+
+	'click .return-inquiry'(event) {
+		event.preventDefault();
+
+		modal.open({
+			title: t('Would_you_like_to_return_the_inquiry'),
+			type: 'warning',
+			showCancelButton: true,
+			confirmButtonColor: '#3085d6',
+			cancelButtonColor: '#d33',
+			confirmButtonText: t('Yes')
+		}, () => {
+			Meteor.call('livechat:returnAsInquiry', this.rid, function(error/*, result*/) {
+				if (error) {
+					console.log(error);
+				} else {
+					Session.set('openedRoom');
+					FlowRouter.go('/home');
+				}
+			});
+		});
+	},
+
+	'click .forward-livechat'(event, instance) {
+		event.preventDefault();
+
+		instance.action.set('forward');
 	}
 });
 
 Template.visitorInfo.onCreated(function() {
 	this.visitorId = new ReactiveVar(null);
 	this.customFields = new ReactiveVar([]);
-	this.editing = new ReactiveVar(false);
+	this.action = new ReactiveVar();
 	this.user = new ReactiveVar();
 
 	Meteor.call('livechat:getCustomFields', (err, customFields) => {
@@ -152,11 +229,11 @@ Template.visitorInfo.onCreated(function() {
 		}
 	});
 
-	var currentData = Template.currentData();
+	const currentData = Template.currentData();
 
 	if (currentData && currentData.rid) {
 		this.autorun(() => {
-			let room = ChatRoom.findOne(currentData.rid);
+			const room = ChatRoom.findOne(currentData.rid);
 			if (room && room.v && room.v._id) {
 				this.visitorId.set(room.v._id);
 			} else {
@@ -168,6 +245,6 @@ Template.visitorInfo.onCreated(function() {
 	}
 
 	this.autorun(() => {
-		this.user.set(Meteor.users.findOne({ '_id': this.visitorId.get() }));
+		this.user.set(LivechatVisitor.findOne({ '_id': this.visitorId.get() }));
 	});
 });

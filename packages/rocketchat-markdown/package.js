@@ -1,34 +1,21 @@
 Package.describe({
 	name: 'rocketchat:markdown',
-	version: '0.0.1',
+	version: '0.0.2',
 	summary: 'Message pre-processor that will process selected markdown notations',
 	git: ''
 });
 
-Package.onUse(function(api) {
-	api.versionsFrom('1.0');
-
-	api.use([
-		'coffeescript',
-		'underscore',
-		'templating',
-		'underscorestring:underscore.string',
-		'simple:highlight.js',
-		'rocketchat:lib',
-	]);
-
-	api.addFiles('settings.coffee', 'server');
-	api.addFiles('markdown.coffee');
-	api.addFiles('markdowncode.coffee');
+Npm.depends({
+	'marked': '0.3.6'
 });
 
-Package.onTest(function(api) {
+Package.onUse(function(api) {
 	api.use([
-		'coffeescript',
-		'sanjo:jasmine@0.20.2',
-		'rocketchat:lib',
-		'rocketchat:markdown',
+		'ecmascript',
+		'templating',
+		'rocketchat:lib'
 	]);
 
-	api.addFiles('tests/jasmine/client/unit/markdown.spec.coffee', 'client');
+	api.addFiles('settings.js', 'server');
+	api.mainModule('markdown.js');
 });

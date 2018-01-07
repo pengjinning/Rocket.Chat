@@ -6,15 +6,13 @@
 
 function Shrug(command, params, item) {
 	if (command === 'shrug') {
-		var msg;
-
-		msg = item;
-		msg.msg = params + ' ¯\\_(ツ)_/¯';
+		const msg = item;
+		msg.msg = `${ params } ¯\\_(ツ)_/¯`;
 		Meteor.call('sendMessage', msg);
 	}
 }
 
 RocketChat.slashCommands.add('shrug', Shrug, {
 	description: 'Slash_Shrug_Description',
-	params: 'your message (optional)'
+	params: 'your_message_optional'
 });

@@ -7,18 +7,16 @@ Package.describe({
 
 Package.onUse(function(api) {
 
-	api.versionsFrom('1.0');
-
 	api.use([
-		'coffeescript',
+		'ecmascript',
 		'check',
 		'rocketchat:lib'
 	]);
 
 	api.use('templating', 'client');
 
-	api.addFiles('client/mute.coffee', 'client');
-	api.addFiles('client/unmute.coffee', 'client');
-	api.addFiles('server/mute.coffee', 'server');
-	api.addFiles('server/unmute.coffee', 'server');
+	api.addFiles('client/mute.js', 'client');
+	api.addFiles('client/unmute.js', 'client');
+	api.addFiles('server/mute.js', 'server');
+	api.addFiles('server/unmute.js', 'server');
 });

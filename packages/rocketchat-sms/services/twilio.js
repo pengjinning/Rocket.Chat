@@ -23,7 +23,7 @@ class Twilio {
 		};
 	}
 	send(fromNumber, toNumber, message) {
-		var client = Npm.require('twilio')(this.accountSid, this.authToken);
+		const client = Npm.require('twilio')(this.accountSid, this.authToken);
 
 		client.messages.create({
 			to: toNumber,
@@ -37,6 +37,18 @@ class Twilio {
 				'Content-Type': 'text/xml'
 			},
 			body: '<Response></Response>'
+		};
+	}
+	error(error) {
+		let message = '';
+		if (error.reason) {
+			message = `<Message>${ error.reason }</Message>`;
+		}
+		return {
+			headers: {
+				'Content-Type': 'text/xml'
+			},
+			body: `<Response>${ message }</Response>`
 		};
 	}
 }

@@ -5,11 +5,9 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
-	api.versionsFrom('1.0');
-	api.use('coffeescript');
+	api.use('ecmascript');
 	api.use('rocketchat:lib');
-
-	api.addFiles('startup.coffee', 'server');
+	api.addFiles('startup.js', 'server');
 });
 
 Npm.depends({

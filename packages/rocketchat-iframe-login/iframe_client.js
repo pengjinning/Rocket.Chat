@@ -1,5 +1,7 @@
 /* globals Accounts, Tracker, ReactiveVar, FlowRouter, Accounts, HTTP, facebookConnectPlugin, TwitterConnect, OAuth */
 
+import _ from 'underscore';
+
 const _unstoreLoginToken = Accounts._unstoreLoginToken;
 Accounts._unstoreLoginToken = function() {
 	RocketChat.iframeLogin.tryLogin();
@@ -27,7 +29,7 @@ class IframeLogin {
 				return c.stop();
 			}
 
-			if (this.enabled === true && this.iframeUrl && this.apiUrl && this.apiMethod && FlowRouter.subsReady('userData', 'activeUsers')) {
+			if (this.enabled === true && this.iframeUrl && this.apiUrl && this.apiMethod) {
 				c.stop();
 				if (!Accounts._storedLoginToken()) {
 					this.tryLogin(() => {});
@@ -59,17 +61,15 @@ class IframeLogin {
 		}
 
 		if (window.cordova) {
-			iframeUrl += separator + 'client=cordova';
+			iframeUrl += `${ separator }client=cordova`;
 		} else if (navigator.userAgent.indexOf('Electron') > -1) {
-			iframeUrl += separator + 'client=electron';
+			iframeUrl += `${ separator }client=electron`;
 		}
 
 		HTTP.call(this.apiMethod, this.apiUrl, options, (error, result) => {
 			console.log(error, result);
-			if (result && result.data && result.data.token) {
-				// TODO get from api
-				// result.data.token = 'yaMadZ1RMBdMzs6kGycKybrHVptoDl7nokxtorz1me0';
-				this.loginWithToken(result.data.token, (error, result) => {
+			if (result && result.data && (result.data.token || result.data.loginToken)) {
+				this.loginWithToken(result.data, (error, result) => {
 					if (error) {
 						this.reactiveIframeUrl.set(iframeUrl);
 					} else {
@@ -84,22 +84,29 @@ class IframeLogin {
 		});
 	}
 
-	loginWithToken(token, callback) {
+	loginWithToken(tokenData, callback) {
 		if (!this.enabled) {
 			return;
 		}
 
+		if (Match.test(tokenData, String)) {
+			tokenData = {
+				token: tokenData
+			};
+		}
+
 		console.log('loginWithToken');
+
+		if (tokenData.loginToken) {
+			return Meteor.loginWithToken(tokenData.loginToken, callback);
+		}
+
 		Accounts.callLoginMethod({
 			methodArguments: [{
 				iframe: true,
-				token: token
+				token: tokenData.token
 			}],
-			userCallback: (err) => {
-				if (err) {
-					callback(err);
-				}
-			}
+			userCallback: callback
 		});
 	}
 }
@@ -133,8 +140,6 @@ window.addEventListener('message', (e) => {
 		return;
 	}
 
-	console.log(e);
-
 	switch (e.data.event) {
 		case 'try-iframe-login':
 			RocketChat.iframeLogin.tryLogin((error) => {
@@ -148,7 +153,7 @@ window.addEventListener('message', (e) => {
 			break;
 
 		case 'login-with-token':
-			RocketChat.iframeLogin.loginWithToken(e.data.token, (error) => {
+			RocketChat.iframeLogin.loginWithToken(e.data, (error) => {
 				if (error) {
 					e.source.postMessage({
 						event: 'login-error',
@@ -163,7 +168,7 @@ window.addEventListener('message', (e) => {
 				console.log('facebook-login-success', response);
 				e.source.postMessage({
 					event: 'facebook-login-success',
-					response: response
+					response
 					// authResponse: Object
 					// 	accessToken: "a7s6d8a76s8d7..."
 					// 	expiresIn: "5172793"
@@ -179,8 +184,8 @@ window.addEventListener('message', (e) => {
 				console.log('facebook-login-error', error, response);
 				e.source.postMessage({
 					event: 'facebook-login-error',
-					error: error,
-					response: response
+					error,
+					response
 				}, e.origin);
 			};
 
@@ -193,7 +198,7 @@ window.addEventListener('message', (e) => {
 							authResponse: {
 								accessToken: serviceData.accessToken,
 								expiresIn: serviceData.expiresAt,
-								secret: secret
+								secret
 							},
 							userID: serviceData.id
 						});
@@ -220,7 +225,7 @@ window.addEventListener('message', (e) => {
 				console.log('twitter-login-success', response);
 				e.source.postMessage({
 					event: 'twitter-login-success',
-					response: response
+					response
 					// {
 					// 	"userName": "orodrigok",
 					// 	"userId": 293123,
@@ -234,7 +239,7 @@ window.addEventListener('message', (e) => {
 				console.log('twitter-login-error', error);
 				e.source.postMessage({
 					event: 'twitter-login-error',
-					error: error
+					error
 				}, e.origin);
 			};
 
@@ -259,10 +264,14 @@ window.addEventListener('message', (e) => {
 
 		case 'call-google-login':
 			const googleLoginSuccess = (response) => {
+				if (typeof response.oauthToken === 'string' && typeof response.accessToken !== 'string') {
+					response.accessToken = response.oauthToken;
+				}
+
 				console.log('google-login-success', response);
 				e.source.postMessage({
 					event: 'google-login-success',
-					response: response
+					response
 					// {
 					// 	"email": "rodrigoknascimento@gmail.com",
 					// 	"userId": "1082039180239",
@@ -281,7 +290,7 @@ window.addEventListener('message', (e) => {
 				console.log('google-login-error', error);
 				e.source.postMessage({
 					event: 'google-login-error',
-					error: error
+					error
 				}, e.origin);
 			};
 

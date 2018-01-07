@@ -1,5 +1,10 @@
+import s from 'underscore.string';
+
 Meteor.methods({
-	deleteUserOwnAccount: function(password) {
+	deleteUserOwnAccount(password) {
+
+		check(password, String);
+
 		if (!Meteor.userId()) {
 			throw new Meteor.Error('error-invalid-user', 'Invalid user', { method: 'deleteUserOwnAccount' });
 		}

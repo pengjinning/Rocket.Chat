@@ -19,9 +19,9 @@ const pkgdef :Spk.PackageDefinition = (
 
 		appTitle = (defaultText = "Rocket.Chat"),
 
-		appVersion = 33,  # Increment this for every release.
+		appVersion = 62,  # Increment this for every release.
 
-		appMarketingVersion = (defaultText = "0.33.0"),
+		appMarketingVersion = (defaultText = "0.61.0-develop"),
 		# Human-readable representation of appVersion. Should match the way you
 		# identify versions of your app in documentation and marketing.
 
@@ -82,11 +82,21 @@ const pkgdef :Spk.PackageDefinition = (
 		]
 	),
 
-	alwaysInclude = [ "." ]
+	alwaysInclude = [ "." ],
 	# This says that we always want to include all files from the source map.
 	# (An alternative is to automatically detect dependencies by watching what
 	# the app opens while running in dev mode. To see what that looks like,
 	# run `spk init` without the -A option.)
+
+	bridgeConfig = (
+		viewInfo = (
+			eventTypes = [
+				(name = "message", verbPhrase = (defaultText = "sent message")),
+				(name = "privateMessage", verbPhrase = (defaultText = "sent private message"), requiredPermission = (explicitList = void)),
+			]
+		),
+		saveIdentityCaps = true,
+	),
 );
 
 const myCommand :Spk.Manifest.Command = (
@@ -96,8 +106,10 @@ const myCommand :Spk.Manifest.Command = (
 		# Note that this defines the *entire* environment seen by your app.
 		(key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
 		(key = "SANDSTORM", value = "1"),
+		(key = "HOME", value = "/var"),
 		(key = "Statistics_reporting", value = "false"),
 		(key = "Accounts_AllowUserAvatarChange", value = "false"),
-		(key = "Accounts_AllowUserProfileChange", value = "false")
+		(key = "Accounts_AllowUserProfileChange", value = "false"),
+		(key = "BABEL_CACHE_DIR", value = "/var/babel_cache")
 	]
 );

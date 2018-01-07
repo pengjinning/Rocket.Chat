@@ -4,9 +4,9 @@
  * @param {boolean} operator - Flag to set as operator or not
  */
 RocketChat.models.Users.setOperator = function(_id, operator) {
-	var update = {
+	const update = {
 		$set: {
-			operator: operator
+			operator
 		}
 	};
 
@@ -18,9 +18,42 @@ RocketChat.models.Users.setOperator = function(_id, operator) {
  * @return
  */
 RocketChat.models.Users.findOnlineAgents = function() {
-	var query = {
-		statusConnection: { $ne: 'offline' },
+	const query = {
+		status: {
+			$exists: true,
+			$ne: 'offline'
+		},
 		statusLivechat: 'available',
+		roles: 'livechat-agent'
+	};
+
+	return this.find(query);
+};
+
+/**
+ * Find an online agent by his username
+ * @return
+ */
+RocketChat.models.Users.findOneOnlineAgentByUsername = function(username) {
+	const query = {
+		username,
+		status: {
+			$exists: true,
+			$ne: 'offline'
+		},
+		statusLivechat: 'available',
+		roles: 'livechat-agent'
+	};
+
+	return this.findOne(query);
+};
+
+/**
+ * Gets all agents
+ * @return
+ */
+RocketChat.models.Users.findAgents = function() {
+	const query = {
 		roles: 'livechat-agent'
 	};
 
@@ -33,8 +66,11 @@ RocketChat.models.Users.findOnlineAgents = function() {
  * @return
  */
 RocketChat.models.Users.findOnlineUserFromList = function(userList) {
-	var query = {
-		statusConnection: { $ne: 'offline' },
+	const query = {
+		status: {
+			$exists: true,
+			$ne: 'offline'
+		},
 		statusLivechat: 'available',
 		roles: 'livechat-agent',
 		username: {
@@ -50,31 +86,34 @@ RocketChat.models.Users.findOnlineUserFromList = function(userList) {
  * @return {object} User from db
  */
 RocketChat.models.Users.getNextAgent = function() {
-	var query = {
-		statusConnection: { $ne: 'offline' },
+	const query = {
+		status: {
+			$exists: true,
+			$ne: 'offline'
+		},
 		statusLivechat: 'available',
 		roles: 'livechat-agent'
 	};
 
-	var collectionObj = this.model.rawCollection();
-	var findAndModify = Meteor.wrapAsync(collectionObj.findAndModify, collectionObj);
+	const collectionObj = this.model.rawCollection();
+	const findAndModify = Meteor.wrapAsync(collectionObj.findAndModify, collectionObj);
 
-	var sort = {
+	const sort = {
 		livechatCount: 1,
 		username: 1
 	};
 
-	var update = {
+	const update = {
 		$inc: {
 			livechatCount: 1
 		}
 	};
 
-	var user = findAndModify(query, sort, update);
-	if (user) {
+	const user = findAndModify(query, sort, update);
+	if (user && user.value) {
 		return {
-			agentId: user._id,
-			username: user.username
+			agentId: user.value._id,
+			username: user.value.username
 		};
 	} else {
 		return null;
@@ -82,41 +121,15 @@ RocketChat.models.Users.getNextAgent = function() {
 };
 
 /**
- * Gets visitor by token
- * @param {string} token - Visitor token
- */
-RocketChat.models.Users.getVisitorByToken = function(token, options) {
-	var query = {
-		'profile.guest': true,
-		'profile.token': token
-	};
-
-	return this.findOne(query, options);
-};
-
-/**
- * Gets visitor by token
- * @param {string} token - Visitor token
- */
-RocketChat.models.Users.findVisitorByToken = function(token) {
-	var query = {
-		'profile.guest': true,
-		'profile.token': token
-	};
-
-	return this.find(query);
-};
-
-/**
  * Change user's livechat status
  * @param {string} token - Visitor token
  */
 RocketChat.models.Users.setLivechatStatus = function(userId, status) {
-	let query = {
+	const query = {
 		'_id': userId
 	};
 
-	let update = {
+	const update = {
 		$set: {
 			'statusLivechat': status
 		}
@@ -125,51 +138,42 @@ RocketChat.models.Users.setLivechatStatus = function(userId, status) {
 	return this.update(query, update);
 };
 
-RocketChat.models.Users.updateLivechatDataByToken = function(token, key, value) {
-	const query = {
-		'profile.token': token
-	};
-
-	const update = {
-		$set: {
-			[`livechatData.${key}`]: value
-		}
-	};
-
-	return this.update(query, update);
+/**
+ * change all livechat agents livechat status to "not-available"
+ */
+RocketChat.models.Users.closeOffice = function() {
+	self = this;
+	self.findAgents().forEach(function(agent) {
+		self.setLivechatStatus(agent._id, 'not-available');
+	});
 };
 
 /**
- * Find a visitor by their phone number
- * @return {object} User from db
+ * change all livechat agents livechat status to "available"
  */
-RocketChat.models.Users.findOneVisitorByPhone = function(phone) {
-	const query = {
-		'phone.phoneNumber': phone
-	};
-
-	return this.findOne(query);
+RocketChat.models.Users.openOffice = function() {
+	self = this;
+	self.findAgents().forEach(function(agent) {
+		self.setLivechatStatus(agent._id, 'available');
+	});
 };
 
-/**
- * Get the next visitor name
- * @return {string} The next visitor name
- */
-RocketChat.models.Users.getNextVisitorUsername = function() {
-	const settingsRaw = RocketChat.models.Settings.model.rawCollection();
-	const findAndModify = Meteor.wrapAsync(settingsRaw.findAndModify, settingsRaw);
-
+RocketChat.models.Users.getAgentInfo = function(agentId) {
 	const query = {
-		_id: 'Livechat_guest_count'
+		_id: agentId
 	};
 
-	const update = {
-		$inc: {
-			value: 1
+	const options = {
+		fields: {
+			name: 1,
+			username: 1,
+			customFields: 1
 		}
 	};
 
-	const livechatCount = findAndModify(query, null, update);
+	if (RocketChat.settings.get('Livechat_show_agent_email')) {
+		options.fields.emails = 1;
+	}
 
-	return 'guest-' + (livechatCount.value + 1);
+	return this.findOne(query, options);
 };

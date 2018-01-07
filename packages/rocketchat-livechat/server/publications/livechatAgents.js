@@ -3,13 +3,13 @@ Meteor.publish('livechat:agents', function() {
 		return this.error(new Meteor.Error('error-not-authorized', 'Not authorized', { publish: 'livechat:agents' }));
 	}
 
-	if (!RocketChat.authz.hasPermission(this.userId, 'view-livechat-rooms')) {
+	if (!RocketChat.authz.hasPermission(this.userId, 'view-l-room')) {
 		return this.error(new Meteor.Error('error-not-authorized', 'Not authorized', { publish: 'livechat:agents' }));
 	}
 
-	var self = this;
+	const self = this;
 
-	var handle = RocketChat.authz.getUsersInRole('livechat-agent').observeChanges({
+	const handle = RocketChat.authz.getUsersInRole('livechat-agent').observeChanges({
 		added(id, fields) {
 			self.added('agentUsers', id, fields);
 		},

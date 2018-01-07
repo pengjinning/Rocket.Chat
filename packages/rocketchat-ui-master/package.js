@@ -10,28 +10,27 @@ Package.describe({
 	documentation: 'README.md'
 });
 
-Package.onUse(function(api) {
-	api.versionsFrom('1.2.1');
+Npm.depends({
+	clipboard: '1.7.1'
+});
 
+Package.onUse(function(api) {
 	api.use([
 		'mongo',
 		'ecmascript',
 		'templating',
-		'coffeescript',
-		'underscore',
+		'reactive-var',
 		'rocketchat:lib',
-		'meteorhacks:inject-initial',
-		'meteorhacks:fast-render'
+		'meteorhacks:inject-initial'
 	]);
 
-	api.addFiles('master/main.html', 'client');
-	api.addFiles('master/loading.html', 'client');
-	api.addFiles('master/pageLoading.html', 'client');
-	api.addFiles('master/error.html', 'client');
-	api.addFiles('master/logoLayout.html', 'client');
-
-	api.addFiles('master/main.coffee', 'client');
+	api.addFiles('client/main.html', 'client');
+	api.addFiles('client/loading.html', 'client');
+	api.addFiles('client/error.html', 'client');
+	api.addFiles('client/logoLayout.html', 'client');
+	api.addFiles('client/main.js', 'client');
 
 	api.addFiles('server/inject.js', 'server');
-	api.addFiles('server/fastRender.js', 'server');
+	api.addAssets('public/icons.svg', 'server');
+	api.addAssets('public/loading.css', 'server');
 });

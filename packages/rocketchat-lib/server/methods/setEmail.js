@@ -1,5 +1,8 @@
 Meteor.methods({
-	setEmail: function(email) {
+	setEmail(email) {
+
+		check (email, String);
+
 		if (!Meteor.userId()) {
 			throw new Meteor.Error('error-invalid-user', 'Invalid user', { method: 'setEmail' });
 		}
@@ -23,5 +26,5 @@ Meteor.methods({
 });
 
 RocketChat.RateLimiter.limitMethod('setEmail', 1, 1000, {
-	userId: function(/*userId*/) { return true; }
+	userId(/*userId*/) { return true; }
 });

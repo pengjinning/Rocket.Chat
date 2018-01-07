@@ -6,15 +6,13 @@
 
 function Gimme(command, params, item) {
 	if (command === 'gimme') {
-		var msg;
-
-		msg = item;
-		msg.msg = '༼ つ ◕_◕ ༽つ ' + params;
+		const msg = item;
+		msg.msg = `༼ つ ◕_◕ ༽つ ${ params }`;
 		Meteor.call('sendMessage', msg);
 	}
 }
 
 RocketChat.slashCommands.add('gimme', Gimme, {
 	description: 'Slash_Gimme_Description',
-	params: 'your message (optional)'
+	params: 'your_message_optional'
 });
